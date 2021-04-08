@@ -2,9 +2,9 @@
 
 [![crates.io](https://img.shields.io/crates/v/reexec.svg)](https://crates.io/crates/reexec)
 [![Docs](https://docs.rs/reexec/badge.svg)](https://docs.rs/reexec)
-[![GitHub Actions](https://github.com/cptpcrd/reexec/workflows/CI/badge.svg?branch=master&event=push)](https://github.com/cptpcrd/reexec/actions?query=workflow%3ACI+branch%3Amaster+event%3Apush)
-[![Cirrus CI](https://api.cirrus-ci.com/github/cptpcrd/reexec.svg?branch=master)](https://cirrus-ci.com/github/cptpcrd/reexec)
-[![codecov](https://codecov.io/gh/cptpcrd/reexec/branch/master/graph/badge.svg)](https://codecov.io/gh/cptpcrd/reexec)
+[![GitHub Actions](https://github.com/cptpcrd/reexec-rs/workflows/CI/badge.svg?branch=master&event=push)](https://github.com/cptpcrd/reexec-rs/actions?query=workflow%3ACI+branch%3Amaster+event%3Apush)
+[![Cirrus CI](https://api.cirrus-ci.com/github/cptpcrd/reexec-rs.svg?branch=master)](https://cirrus-ci.com/github/cptpcrd/reexec-rs)
+[![codecov](https://codecov.io/gh/cptpcrd/reexec-rs/branch/master/graph/badge.svg)](https://codecov.io/gh/cptpcrd/reexec-rs)
 
 A library that makes it easy to re-execute the current process.
 
