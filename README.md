@@ -37,6 +37,7 @@ Verified to work on:
 Untested:
 
 - Solaris/IllumOS
+- DragonFlyBSD
 
 ## OS-specific notes
 
