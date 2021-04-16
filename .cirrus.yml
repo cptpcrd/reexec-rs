@@ -21,6 +21,8 @@ task:
     - env:
         TOOLCHAIN: nightly
 
+  allow_failures: $TOOLCHAIN == 'nightly'
+
   env:
     CODECOV_TOKEN: ENCRYPTED[cbcd034b85aecbc196f96c6962a718e283d35c3d88f8915bdd2ff8878d10516e17b1a82787596a2006138c70b4ce48a8]
 
