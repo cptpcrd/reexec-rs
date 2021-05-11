@@ -1,3 +1,6 @@
+#[cfg(target_os = "freebsd")]
+pub const AT_EXECPATH: libc::c_int = 15;
+
 #[cfg(target_os = "openbsd")]
 pub const ARG_MAX: usize = 512 * 1024;
 #[cfg(target_os = "openbsd")]
@@ -93,4 +96,19 @@ pub struct kinfo_file {
     pub t_snd_cwnd: u64,
 
     pub va_nlink: u32,
+}
+
+extern "C" {
+    #[cfg(target_os = "freebsd")]
+    pub fn elf_aux_info(
+        aux: libc::c_int,
+        buf: *mut libc::c_void,
+        buflen: libc::c_int,
+    ) -> libc::c_int;
+
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    pub fn proc_pidpath(pid: libc::c_int, buf: *mut libc::c_void, buflen: u32) -> libc::c_int;
+
+    #[cfg(any(target_os = "solaris", target_os = "illumos"))]
+    pub fn getexecname() -> *const libc::c_char;
 }

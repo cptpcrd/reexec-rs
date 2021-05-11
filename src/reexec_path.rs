@@ -1,5 +1,8 @@
 #![allow(unreachable_code, unused_variables)]
 
+#[allow(unused_imports)]
+use crate::sys;
+
 /// If possible, return a path under `/proc` that may refer to the current program.
 #[inline]
 pub fn get_procfs() -> Option<&'static [u8]> {
@@ -58,11 +61,9 @@ pub fn get_procinfo(buf: &mut [u8]) -> Option<Option<usize>> {
     // macOS has proc_pidpath()
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
-        extern "C" {
-            fn proc_pidpath(pid: libc::c_int, buf: *mut libc::c_void, buflen: u32) -> libc::c_int;
-        }
-
-        let n = unsafe { proc_pidpath(libc::getpid(), buf.as_mut_ptr() as *mut _, buf.len() as _) };
+        let n = unsafe {
+            sys::proc_pidpath(libc::getpid(), buf.as_mut_ptr() as *mut _, buf.len() as _)
+        };
         if n > 0 {
             return Some(Some(n as usize));
         }
@@ -85,11 +86,7 @@ pub fn get_initial_static() -> Option<*const libc::c_char> {
 
     #[cfg(any(target_os = "solaris", target_os = "illumos"))]
     {
-        extern "C" {
-            fn getexecname() -> *const libc::c_char;
-        }
-
-        let path = unsafe { getexecname() };
+        let path = unsafe { sys::getexecname() };
         if !path.is_null() {
             return Some(path);
         }
@@ -104,16 +101,10 @@ pub fn get_initial_buffered(buf: &mut [u8]) -> Option<Option<usize>> {
     // Fallback in case the sysctl() method fails on FreeBSD for some reason
     #[cfg(target_os = "freebsd")]
     {
-        extern "C" {
-            fn elf_aux_info(
-                aux: libc::c_int,
-                buf: *mut libc::c_void,
-                buflen: libc::c_int,
-            ) -> libc::c_int;
-        }
-        const AT_EXECPATH: libc::c_int = 15;
-
-        if unsafe { elf_aux_info(AT_EXECPATH, buf.as_mut_ptr() as *mut _, buf.len() as _) } == 0 {
+        if unsafe {
+            sys::elf_aux_info(sys::AT_EXECPATH, buf.as_mut_ptr() as *mut _, buf.len() as _)
+        } == 0
+        {
             return Some(None);
         }
     }
@@ -128,8 +119,6 @@ pub fn get_initial_buffered(buf: &mut [u8]) -> Option<Option<usize>> {
 /// `kinfo_file` we just retrieved. If everything matches, we found the executable.
 #[cfg(target_os = "openbsd")]
 pub fn get_openbsd(buf: &mut [u8]) -> Option<(usize, libc::dev_t, libc::ino_t)> {
-    use crate::sys;
-
     const PTR_SIZE: usize = std::mem::size_of::<*const u8>();
 
     let pid = unsafe { libc::getpid() };
