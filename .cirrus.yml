@@ -44,5 +44,5 @@ task:
         fi
       done
   coverage_collect_upload_script:
-    - kcov --merge coverage-merged/ coverage-no-fdescfs/ coverage-fdescfs/
+    - kcov --merge coverage-merged/ coverage-build/
     - OS="$FREEBSD_IMAGE" bash <(curl -s https://codecov.io/bash) -e OS,TOOLCHAIN -n "$FREEBSD_IMAGE-$TOOLCHAIN" -Z -f coverage-merged/kcov-merged/cobertura.xml
