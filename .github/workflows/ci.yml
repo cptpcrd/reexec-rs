@@ -158,6 +158,14 @@ jobs:
         target: [x86_64-apple-darwin]
         os: [macos-latest]
 
+        include:
+          - toolchain: nightly
+            target: x86_64-pc-windows-msvc
+            os: windows-latest
+          - toolchain: nightly
+            target: x86_64-pc-windows-gnu
+            os: windows-latest
+
     runs-on: ${{ matrix.os }}
 
     steps:
