@@ -39,6 +39,7 @@ Untested:
 
 - Solaris/IllumOS
 - DragonFlyBSD
+- Redox
 
 ## OS-specific notes
 

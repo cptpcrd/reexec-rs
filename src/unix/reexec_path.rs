@@ -69,6 +69,44 @@ pub fn get_procinfo(buf: &mut [u8]) -> Option<Option<usize>> {
         }
     }
 
+    // Redox has the sys:exe special file, which contains the path to the process's executable
+    #[cfg(target_os = "redox")]
+    {
+        let fd = unsafe {
+            libc::open(
+                b"sys:exe\0".as_ptr() as *const _,
+                libc::O_RDONLY | libc::O_CLOEXEC,
+            )
+        };
+
+        if fd >= 0 {
+            let mut n = 0;
+            while n < buf.len() {
+                match unsafe { libc::read(fd, buf.as_mut_ptr().add(n) as *mut _, buf.len() - n) } {
+                    // Error reading from the file; abort
+                    -1 => {
+                        // Set n=0 to ensure that the (incomplete) name is not actually returned
+                        n = 0;
+                        break;
+                    }
+                    // EOF
+                    0 => break,
+                    // Add the count and continue reading
+                    count => n += count as usize,
+                }
+            }
+
+            unsafe {
+                libc::close(fd);
+            }
+            // Only return the path if it isn't empty (i.e. not present) and it isn't full (i.e.
+            // too long)
+            if (1..buf.len() - 1).contains(&n) {
+                return Some(Some(n as usize));
+            }
+        }
+    }
+
     None
 }
 

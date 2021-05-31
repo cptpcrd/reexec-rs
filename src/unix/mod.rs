@@ -10,9 +10,9 @@ use crate::errno_ptr;
 
 #[inline]
 unsafe fn eaccess(path: *const libc::c_char, amode: libc::c_int) -> libc::c_int {
-    #[cfg(not(target_os = "android"))]
+    #[cfg(not(any(target_os = "android", target_os = "redox")))]
     return sys::faccessat(libc::AT_FDCWD, path, amode, libc::AT_EACCESS);
-    #[cfg(target_os = "android")]
+    #[cfg(any(target_os = "android", target_os = "redox"))]
     return libc::access(path, amode);
 }
 

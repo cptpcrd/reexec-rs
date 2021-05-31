@@ -37,6 +37,10 @@ jobs:
             target: x86_64-apple-darwin
             os: macos-latest
 
+          - toolchain: nightly
+            target: x86_64-unknown-redox
+            os: ubuntu-latest
+
           - toolchain: stable
             target: x86_64-pc-windows-msvc
             os: windows-latest

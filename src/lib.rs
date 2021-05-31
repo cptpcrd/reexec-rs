@@ -11,7 +11,7 @@ mod imp;
 use libc::___errno as errno_ptr;
 #[cfg(any(target_os = "android", target_os = "netbsd", target_os = "openbsd"))]
 use libc::__errno as errno_ptr;
-#[cfg(any(target_os = "linux", target_os = "dragonfly"))]
+#[cfg(any(target_os = "linux", target_os = "dragonfly", target_os = "redox"))]
 use libc::__errno_location as errno_ptr;
 #[cfg(any(target_os = "freebsd", target_os = "macos"))]
 use libc::__error as errno_ptr;

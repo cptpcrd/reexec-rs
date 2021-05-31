@@ -121,5 +121,10 @@ extern "C" {
     ) -> libc::c_int;
 }
 
-#[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+#[cfg(not(any(
+    target_os = "solaris",
+    target_os = "illumos",
+    target_os = "android",
+    target_os = "redox"
+)))]
 pub use libc::faccessat;
