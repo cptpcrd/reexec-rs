@@ -120,7 +120,7 @@ pub fn get_initial_static() -> Option<*const libc::c_char> {
     ))]
     {
         let path = unsafe { libc::getauxval(libc::AT_EXECFN) } as *const libc::c_char;
-        if !path.is_null() {
+        if !path.is_null() && unsafe { *path } == b'/' as _ {
             return Some(path);
         }
     }
@@ -128,7 +128,7 @@ pub fn get_initial_static() -> Option<*const libc::c_char> {
     #[cfg(any(target_os = "solaris", target_os = "illumos"))]
     {
         let path = unsafe { sys::getexecname() };
-        if !path.is_null() {
+        if !path.is_null() && unsafe { *path } == b'/' as _ {
             return Some(path);
         }
     }
@@ -145,6 +145,7 @@ pub fn get_initial_buffered(buf: &mut [u8]) -> Option<Option<usize>> {
         if unsafe {
             sys::elf_aux_info(sys::AT_EXECPATH, buf.as_mut_ptr() as *mut _, buf.len() as _)
         } == 0
+            && buf[0] == b'/'
         {
             return Some(None);
         }
