@@ -111,4 +111,15 @@ extern "C" {
 
     #[cfg(any(target_os = "solaris", target_os = "illumos"))]
     pub fn getexecname() -> *const libc::c_char;
+
+    #[cfg(any(target_os = "solaris", target_os = "illumos"))]
+    pub fn faccessat(
+        dirfd: libc::c_int,
+        path: *const libc::c_char,
+        amode: libc::c_int,
+        flags: libc::c_int,
+    ) -> libc::c_int;
 }
+
+#[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
+pub use libc::faccessat;

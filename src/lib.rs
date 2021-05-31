@@ -20,20 +20,7 @@ use libc::___errno as errno_ptr;
 
 #[inline]
 unsafe fn eaccess(path: *const libc::c_char, amode: libc::c_int) -> libc::c_int {
-    #[cfg(any(target_os = "solaris", target_os = "illumos"))]
-    extern "C" {
-        fn faccessat(
-            dirfd: libc::c_int,
-            path: *const libc::c_char,
-            amode: libc::c_int,
-            flags: libc::c_int,
-        ) -> libc::c_int;
-    }
-
-    #[cfg(not(any(target_os = "solaris", target_os = "illumos")))]
-    use libc::faccessat;
-
-    faccessat(libc::AT_FDCWD, path, amode, libc::AT_EACCESS)
+    sys::faccessat(libc::AT_FDCWD, path, amode, libc::AT_EACCESS)
 }
 
 /// Re-execute the currently running program with the specified `argv` and `envp`.
