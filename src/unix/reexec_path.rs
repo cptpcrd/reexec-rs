@@ -1,7 +1,7 @@
 #![allow(unreachable_code, unused_variables)]
 
 #[allow(unused_imports)]
-use crate::sys;
+use crate::imp::sys;
 
 /// If possible, return a path under `/proc` that may refer to the current program.
 #[inline]
@@ -225,12 +225,12 @@ pub fn get_openbsd(buf: &mut [u8]) -> Option<(usize, libc::dev_t, libc::ino_t)> 
 mod tests {
     use super::*;
 
-    use crate::tests::check_path;
+    use crate::tests::check_path_bytes;
 
     #[test]
     fn test_get_procfs() {
         if let Some(path) = get_procfs() {
-            check_path(path.split_last().unwrap().1);
+            check_path_bytes(path.split_last().unwrap().1);
         }
     }
 
@@ -239,7 +239,7 @@ mod tests {
         let mut buf = [0; libc::PATH_MAX as usize];
 
         if let Some(n) = get_procinfo(&mut buf) {
-            check_path(
+            check_path_bytes(
                 &buf[..n.unwrap_or_else(|| unsafe { libc::strlen(buf.as_ptr() as *const _) })],
             );
         }
@@ -248,7 +248,9 @@ mod tests {
     #[test]
     fn test_get_initial_static() {
         if let Some(path) = get_initial_static() {
-            check_path(unsafe { std::slice::from_raw_parts(path as *const _, libc::strlen(path)) });
+            check_path_bytes(unsafe {
+                std::slice::from_raw_parts(path as *const _, libc::strlen(path))
+            });
         }
     }
 
@@ -257,7 +259,7 @@ mod tests {
         let mut buf = [0; libc::PATH_MAX as usize];
 
         if let Some(n) = get_initial_buffered(&mut buf) {
-            check_path(
+            check_path_bytes(
                 &buf[..n.unwrap_or_else(|| unsafe { libc::strlen(buf.as_ptr() as *const _) })],
             );
         }
@@ -269,7 +271,7 @@ mod tests {
         let mut buf = [0; libc::PATH_MAX as usize];
 
         if let Some((n, _, _)) = get_openbsd(&mut buf) {
-            check_path(&buf[..n]);
+            check_path_bytes(&buf[..n]);
         }
     }
 }

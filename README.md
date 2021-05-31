@@ -19,7 +19,7 @@ Advantages of `reexec`:
 
 Disadvantages of `reexec`:
 
-- OS support is more limited (see below)
+- OS support is slightly more limited (see below)
 
 # Supported OSes
 
@@ -27,6 +27,7 @@ Tested in CI:
 
 - Linux
 - macOS
+- Windows
 - FreeBSD
 
 Verified to work on:

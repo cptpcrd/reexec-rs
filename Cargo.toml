@@ -11,3 +11,9 @@ repository = "https://github.com/cptpcrd/reexec-rs"
 
 [dependencies]
 libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["minwindef", "errhandlingapi", "processthreadsapi", "winbase"] }
+
+[package.metadata.docs.rs]
+rustc-args = ["--cfg", "docsrs"]
