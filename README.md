@@ -25,7 +25,7 @@ Disadvantages of `reexec`:
 
 Tested in CI:
 
-- Linux
+- Linux (glibc and musl)
 - macOS
 - Windows
 - FreeBSD
