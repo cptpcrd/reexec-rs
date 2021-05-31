@@ -20,7 +20,10 @@ use libc::___errno as errno_ptr;
 
 #[inline]
 unsafe fn eaccess(path: *const libc::c_char, amode: libc::c_int) -> libc::c_int {
-    sys::faccessat(libc::AT_FDCWD, path, amode, libc::AT_EACCESS)
+    #[cfg(not(target_os = "android"))]
+    return sys::faccessat(libc::AT_FDCWD, path, amode, libc::AT_EACCESS);
+    #[cfg(target_os = "android")]
+    return libc::access(path, amode);
 }
 
 /// Re-execute the currently running program with the specified `argv` and `envp`.

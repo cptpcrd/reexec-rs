@@ -6,7 +6,7 @@ use crate::sys;
 /// If possible, return a path under `/proc` that may refer to the current program.
 #[inline]
 pub fn get_procfs() -> Option<&'static [u8]> {
-    #[cfg(target_os = "linux")]
+    #[cfg(any(target_os = "linux", target_os = "android"))]
     return Some(b"/proc/self/exe\0");
 
     #[cfg(any(target_os = "solaris", target_os = "illumos"))]
@@ -76,7 +76,10 @@ pub fn get_procinfo(buf: &mut [u8]) -> Option<Option<usize>> {
 #[inline]
 pub fn get_initial_static() -> Option<*const libc::c_char> {
     // On Linux, if /proc isn't mounted, getauxval(AT_EXECFN) might still give us the original path
-    #[cfg(target_os = "linux")]
+    #[cfg(any(
+        target_os = "linux",
+        all(target_os = "android", target_pointer_width = "64"),
+    ))]
     {
         let path = unsafe { libc::getauxval(libc::AT_EXECFN) } as *const libc::c_char;
         if !path.is_null() {
