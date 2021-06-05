@@ -41,27 +41,27 @@ pub unsafe fn reexecve(argv: *const *const libc::c_char, envp: *const *const lib
     //   where the process can access it (either as a pointer or by copying into a buffer). That
     //   won't update across rename()s (and definitely not unlink()s), but it's the best we can do.
 
-    if let Some(path) = reexec_path::get_procfs() {
+    if let Ok(path) = reexec_path::get_procfs() {
         try_exec!(path.as_ptr());
     }
 
     // The compiler will optimize this out if it's not needed
     let mut buf = [0u8; libc::PATH_MAX as usize];
 
-    if reexec_path::get_procinfo(&mut buf).is_some() {
+    if reexec_path::get_procinfo(&mut buf).is_ok() {
         try_exec!(buf.as_ptr());
     }
 
-    if let Some(path) = reexec_path::get_initial_static() {
+    if let Ok(path) = reexec_path::get_initial_static() {
         try_exec!(path);
     }
 
-    if reexec_path::get_initial_buffered(&mut buf).is_some() {
+    if reexec_path::get_initial_buffered(&mut buf).is_ok() {
         try_exec!(buf.as_ptr());
     }
 
     #[cfg(target_os = "openbsd")]
-    if reexec_path::get_openbsd(&mut buf).is_some() {
+    if reexec_path::get_openbsd(&mut buf).is_ok() {
         try_exec!(buf.as_ptr());
     }
 
@@ -102,25 +102,25 @@ pub fn get_reexec_path() -> Result<Cow<'static, Path>, i32> {
 
         // Order is important, as described in reexecve()
 
-        if let Some(path) = reexec_path::get_procfs() {
+        if let Ok(path) = reexec_path::get_procfs() {
             try_static_path!(path.as_ptr() as *const libc::c_char, path.len() - 1);
         }
 
         // The compiler will optimize this out if it's not needed
         let mut buf = [0u8; libc::PATH_MAX as usize];
 
-        if let Some(n) = reexec_path::get_procinfo(&mut buf) {
+        if let Ok(n) = reexec_path::get_procinfo(&mut buf) {
             try_buffered_path!(
                 buf,
                 n.unwrap_or_else(|| libc::strlen(buf.as_ptr() as *const _)),
             );
         }
 
-        if let Some(path) = reexec_path::get_initial_static() {
+        if let Ok(path) = reexec_path::get_initial_static() {
             try_static_path!(path, libc::strlen(path));
         }
 
-        if let Some(n) = reexec_path::get_initial_buffered(&mut buf) {
+        if let Ok(n) = reexec_path::get_initial_buffered(&mut buf) {
             try_buffered_path!(
                 buf,
                 n.unwrap_or_else(|| libc::strlen(buf.as_ptr() as *const _)),
@@ -128,7 +128,7 @@ pub fn get_reexec_path() -> Result<Cow<'static, Path>, i32> {
         }
 
         #[cfg(target_os = "openbsd")]
-        if let Some((n, dev, ino)) = reexec_path::get_openbsd(&mut buf) {
+        if let Ok((n, dev, ino)) = reexec_path::get_openbsd(&mut buf) {
             if eaccess(buf.as_ptr() as *const _, libc::X_OK) == 0 {
                 let path = &buf[..n];
 

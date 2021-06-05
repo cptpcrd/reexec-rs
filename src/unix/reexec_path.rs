@@ -5,22 +5,22 @@ use crate::imp::sys;
 
 /// If possible, return a path under `/proc` that may refer to the current program.
 #[inline]
-pub fn get_procfs() -> Option<&'static [u8]> {
+pub fn get_procfs() -> Result<&'static [u8], ()> {
     #[cfg(any(target_os = "linux", target_os = "android"))]
-    return Some(b"/proc/self/exe\0");
+    return Ok(b"/proc/self/exe\0");
 
     #[cfg(any(target_os = "solaris", target_os = "illumos"))]
-    return Some(b"/proc/self/object/a.out\0");
+    return Ok(b"/proc/self/object/a.out\0");
 
     #[cfg(any(target_os = "netbsd", target_os = "dragonfly"))]
-    return Some(b"/proc/curproc/file\0");
+    return Ok(b"/proc/curproc/file\0");
 
-    None
+    Err(())
 }
 
 /// If possible, get the path of the currently running program via OS-specific kernel interfaces.
 #[inline]
-pub fn get_procinfo(buf: &mut [u8]) -> Option<Option<usize>> {
+pub fn get_procinfo(buf: &mut [u8]) -> Result<Option<usize>, ()> {
     // FreeBSD/DragonFlyBSD/NetBSD let you get the path with sysctl()
     #[cfg(any(target_os = "freebsd", target_os = "dragonfly", target_os = "netbsd"))]
     {
@@ -54,7 +54,7 @@ pub fn get_procinfo(buf: &mut [u8]) -> Option<Option<usize>> {
         } == 0
             && len > 1
         {
-            return Some(Some(len - 1));
+            return Ok(Some(len - 1));
         }
     }
 
@@ -65,7 +65,7 @@ pub fn get_procinfo(buf: &mut [u8]) -> Option<Option<usize>> {
             sys::proc_pidpath(libc::getpid(), buf.as_mut_ptr() as *mut _, buf.len() as _)
         };
         if n > 0 {
-            return Some(Some(n as usize));
+            return Ok(Some(n as usize));
         }
     }
 
@@ -102,17 +102,17 @@ pub fn get_procinfo(buf: &mut [u8]) -> Option<Option<usize>> {
             // Only return the path if it isn't empty (i.e. not present) and it isn't full (i.e.
             // too long)
             if (1..buf.len() - 1).contains(&n) {
-                return Some(Some(n as usize));
+                return Ok(Some(n as usize));
             }
         }
     }
 
-    None
+    Err(())
 }
 
 /// Get the path that the process was started with as a static string.
 #[inline]
-pub fn get_initial_static() -> Option<*const libc::c_char> {
+pub fn get_initial_static() -> Result<*const libc::c_char, ()> {
     // On Linux, if /proc isn't mounted, getauxval(AT_EXECFN) might still give us the original path
     #[cfg(any(
         target_os = "linux",
@@ -121,7 +121,7 @@ pub fn get_initial_static() -> Option<*const libc::c_char> {
     {
         let path = unsafe { libc::getauxval(libc::AT_EXECFN) } as *const libc::c_char;
         if !path.is_null() && unsafe { *path } == b'/' as _ {
-            return Some(path);
+            return Ok(path);
         }
     }
 
@@ -129,16 +129,16 @@ pub fn get_initial_static() -> Option<*const libc::c_char> {
     {
         let path = unsafe { sys::getexecname() };
         if !path.is_null() && unsafe { *path } == b'/' as _ {
-            return Some(path);
+            return Ok(path);
         }
     }
 
-    None
+    Err(())
 }
 
 /// Get the path that the process was started with (and store it into a buffer)
 #[inline]
-pub fn get_initial_buffered(buf: &mut [u8]) -> Option<Option<usize>> {
+pub fn get_initial_buffered(buf: &mut [u8]) -> Result<Option<usize>, ()> {
     // Fallback in case the sysctl() method fails on FreeBSD for some reason
     #[cfg(target_os = "freebsd")]
     {
@@ -147,11 +147,11 @@ pub fn get_initial_buffered(buf: &mut [u8]) -> Option<Option<usize>> {
         } == 0
             && buf[0] == b'/'
         {
-            return Some(None);
+            return Ok(None);
         }
     }
 
-    None
+    Err(())
 }
 
 /// The OpenBSD method.
@@ -160,7 +160,7 @@ pub fn get_initial_buffered(buf: &mut [u8]) -> Option<Option<usize>> {
 /// `argv[0]` contains a `/`, it then `stat()`s it to check if that matches the metadata in the
 /// `kinfo_file` we just retrieved. If everything matches, we found the executable.
 #[cfg(target_os = "openbsd")]
-pub fn get_openbsd(buf: &mut [u8]) -> Option<(usize, libc::dev_t, libc::ino_t)> {
+pub fn get_openbsd(buf: &mut [u8]) -> Result<(usize, libc::dev_t, libc::ino_t), ()> {
     const PTR_SIZE: usize = std::mem::size_of::<*const u8>();
 
     let pid = unsafe { libc::getpid() };
@@ -185,7 +185,7 @@ pub fn get_openbsd(buf: &mut [u8]) -> Option<(usize, libc::dev_t, libc::ino_t)> 
         )
     } != 0
     {
-        return None;
+        return Err(());
     }
 
     // Extract argv[0]
@@ -221,18 +221,18 @@ pub fn get_openbsd(buf: &mut [u8]) -> Option<(usize, libc::dev_t, libc::ino_t)> 
     {
         // Even if we fail with ENOMEM, the first item may be filled in
         if unsafe { *crate::errno_ptr() } != libc::ENOMEM {
-            return None;
+            return Err(());
         }
     }
 
     // The kernel should have initialized this structure
     if kfile_len == 0 {
-        return None;
+        return Err(());
     }
     let kfile = unsafe { kfile.assume_init() };
     // And it should contain information on the executable file
     if kfile.fd_fd != sys::KERN_FILE_TEXT {
-        return None;
+        return Err(());
     }
 
     let dev = kfile.va_fsid as libc::dev_t;
@@ -253,11 +253,11 @@ pub fn get_openbsd(buf: &mut [u8]) -> Option<(usize, libc::dev_t, libc::ino_t)> 
         if unsafe { check_path(arg0.as_ptr(), dev, ino) } {
             buf[..arg0.len()].copy_from_slice(arg0);
             buf[arg0.len()] = 0;
-            return Some((arg0.len(), dev, ino));
+            return Ok((arg0.len(), dev, ino));
         }
     }
 
-    None
+    Err(())
 }
 
 #[cfg(test)]
@@ -268,7 +268,7 @@ mod tests {
 
     #[test]
     fn test_get_procfs() {
-        if let Some(path) = get_procfs() {
+        if let Ok(path) = get_procfs() {
             check_path_bytes(path.split_last().unwrap().1);
         }
     }
@@ -277,7 +277,7 @@ mod tests {
     fn test_get_procinfo() {
         let mut buf = [0; libc::PATH_MAX as usize];
 
-        if let Some(n) = get_procinfo(&mut buf) {
+        if let Ok(n) = get_procinfo(&mut buf) {
             check_path_bytes(
                 &buf[..n.unwrap_or_else(|| unsafe { libc::strlen(buf.as_ptr() as *const _) })],
             );
@@ -286,7 +286,7 @@ mod tests {
 
     #[test]
     fn test_get_initial_static() {
-        if let Some(path) = get_initial_static() {
+        if let Ok(path) = get_initial_static() {
             check_path_bytes(unsafe {
                 std::slice::from_raw_parts(path as *const _, libc::strlen(path))
             });
@@ -297,7 +297,7 @@ mod tests {
     fn test_get_initial_buffered() {
         let mut buf = [0; libc::PATH_MAX as usize];
 
-        if let Some(n) = get_initial_buffered(&mut buf) {
+        if let Ok(n) = get_initial_buffered(&mut buf) {
             check_path_bytes(
                 &buf[..n.unwrap_or_else(|| unsafe { libc::strlen(buf.as_ptr() as *const _) })],
             );
@@ -309,7 +309,7 @@ mod tests {
     fn test_get_openbsd() {
         let mut buf = [0; libc::PATH_MAX as usize];
 
-        if let Some((n, _, _)) = get_openbsd(&mut buf) {
+        if let Ok((n, _, _)) = get_openbsd(&mut buf) {
             check_path_bytes(&buf[..n]);
         }
     }
