@@ -35,7 +35,12 @@ pub unsafe fn wreexecve(
     *errno_ptr()
 }
 
+#[inline]
 pub fn get_reexec_path() -> Result<Cow<'static, Path>, i32> {
+    get_exe_path()
+}
+
+pub fn get_exe_path() -> Result<Cow<'static, Path>, i32> {
     let mut buf = [0; MAX_PATH];
     let mut len = buf.len() as _;
     if unsafe {

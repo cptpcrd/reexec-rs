@@ -70,6 +70,15 @@ pub fn get_reexec_path() -> Result<Cow<'static, Path>, i32> {
     imp::get_reexec_path()
 }
 
+/// Get the actual path to the current executable.
+///
+/// This does the same thing as `std::env::current_exe()`, though on some platforms it may be more
+/// reliable.
+#[inline]
+pub fn get_exe_path() -> Result<Cow<'static, Path>, i32> {
+    imp::get_exe_path()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -131,5 +140,10 @@ mod tests {
     #[test]
     fn test_get_reexec_path() {
         check_path(get_reexec_path().unwrap().as_ref().as_ref());
+    }
+
+    #[test]
+    fn test_get_exe_path() {
+        check_path(get_exe_path().unwrap().as_ref().as_ref());
     }
 }

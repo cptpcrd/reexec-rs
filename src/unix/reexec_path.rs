@@ -5,7 +5,7 @@ use crate::imp::sys;
 
 /// If possible, return a path under `/proc` that may refer to the current program.
 #[inline]
-pub fn get_procfs() -> Result<&'static [u8], ()> {
+pub fn get_procfs_reexec() -> Result<&'static [u8], ()> {
     #[cfg(any(target_os = "linux", target_os = "android"))]
     return Ok(b"/proc/self/exe\0");
 
@@ -14,6 +14,46 @@ pub fn get_procfs() -> Result<&'static [u8], ()> {
 
     #[cfg(any(target_os = "netbsd", target_os = "dragonfly"))]
     return Ok(b"/proc/curproc/file\0");
+
+    Err(())
+}
+
+/// If possible, `readlink()` a symlink under `/proc` that may refer to the current program.
+#[inline]
+pub fn get_procfs_readlink(buf: &mut [u8]) -> Result<usize, ()> {
+    #[allow(unused_assignments, unused_mut)]
+    let mut path: Option<&[u8]> = None;
+
+    #[cfg(any(target_os = "linux", target_os = "android"))]
+    {
+        path = Some(b"/proc/self/exe\0");
+    }
+    #[cfg(any(target_os = "solaris", target_os = "illumos"))]
+    {
+        path = Some(b"/proc/self/path/a.out\0");
+    }
+    #[cfg(target_os = "netbsd")]
+    {
+        path = Some(b"/proc/curproc/exe\0");
+    }
+
+    if let Some(path) = path {
+        let mut n = unsafe {
+            libc::readlink(
+                path.as_ptr() as *const _,
+                buf.as_mut_ptr() as *mut _,
+                buf.len(),
+            )
+        } as usize;
+
+        if n != 0 && n < buf.len() - 1 {
+            // Some OSes may add a trailing NUL byte
+            if buf[n - 1] == 0 {
+                n -= 1;
+            }
+            return Ok(n);
+        }
+    }
 
     Err(())
 }
@@ -267,9 +307,18 @@ mod tests {
     use crate::tests::check_path_bytes;
 
     #[test]
-    fn test_get_procfs() {
-        if let Ok(path) = get_procfs() {
+    fn test_get_procfs_reexec() {
+        if let Ok(path) = get_procfs_reexec() {
             check_path_bytes(path.split_last().unwrap().1);
+        }
+    }
+
+    #[test]
+    fn test_get_procfs_readlink() {
+        let mut buf = [0; libc::PATH_MAX as usize];
+
+        if let Ok(n) = get_procfs_readlink(&mut buf) {
+            check_path_bytes(&buf[..n]);
         }
     }
 
