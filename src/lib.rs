@@ -98,6 +98,9 @@ mod tests {
     }
 
     pub(crate) fn check_path(path: &OsStr) {
+        #[cfg(unix)]
+        assert!(path.as_bytes().len() < libc::PATH_MAX as usize);
+
         fn check_same_meta(m1: &fs::Metadata, m2: &fs::Metadata) {
             #[cfg(unix)]
             {
