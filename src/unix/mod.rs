@@ -46,7 +46,7 @@ pub unsafe fn reexecve(argv: *const *const libc::c_char, envp: *const *const lib
     }
 
     // The compiler will optimize this out if it's not needed
-    let mut buf = [0u8; libc::PATH_MAX as usize];
+    let mut buf = [0u8; libc::PATH_MAX as usize + 1];
 
     if reexec_path::get_procinfo(&mut buf).is_ok() {
         try_exec!(buf.as_ptr());
@@ -107,7 +107,7 @@ pub fn get_reexec_path() -> Result<Cow<'static, Path>, i32> {
         }
 
         // The compiler will optimize this out if it's not needed
-        let mut buf = [0u8; libc::PATH_MAX as usize];
+        let mut buf = [0u8; libc::PATH_MAX as usize + 1];
 
         if let Ok(n) = reexec_path::get_procinfo(&mut buf) {
             try_buffered_path!(
@@ -191,7 +191,7 @@ pub fn get_exe_path() -> Result<Cow<'static, Path>, i32> {
         }
 
         // The compiler will optimize this out if it's not needed
-        let mut buf = [0u8; libc::PATH_MAX as usize];
+        let mut buf = [0u8; libc::PATH_MAX as usize + 1];
 
         if let Ok(n) = reexec_path::get_procfs_readlink(&mut buf) {
             try_buffered_path!(buf, n);
