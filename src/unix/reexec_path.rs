@@ -95,7 +95,7 @@ pub fn get_procinfo(buf: &mut [u8]) -> Result<Option<usize>, ()> {
                 0,
             )
         } == 0
-            && len > 1
+            && (2..buf.len()).contains(&len)
         {
             return Ok(Some(len - 1));
         }
@@ -107,7 +107,7 @@ pub fn get_procinfo(buf: &mut [u8]) -> Result<Option<usize>, ()> {
         let n = unsafe {
             sys::proc_pidpath(libc::getpid(), buf.as_mut_ptr() as *mut _, buf.len() as _)
         };
-        if n > 0 {
+        if (1..buf.len()).contains(&(n as _)) {
             return Ok(Some(n as usize));
         }
     }
@@ -293,7 +293,7 @@ pub fn get_openbsd(buf: &mut [u8]) -> Result<(usize, libc::dev_t, libc::ino_t), 
         st.st_ino == ino && st.st_dev == dev
     }
 
-    if arg0.contains(&b'/') {
+    if arg0.contains(&b'/') && arg0.len() < buf.len() {
         if unsafe { check_path(arg0.as_ptr(), dev, ino) } {
             buf[..arg0.len()].copy_from_slice(arg0);
             buf[arg0.len()] = 0;
