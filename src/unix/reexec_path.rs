@@ -310,6 +310,15 @@ mod tests {
 
     use crate::tests::check_path_bytes;
 
+    fn check_buflen(buf: &[u8], n: Option<usize>) -> &[u8] {
+        let len = buf.iter().position(|&ch| ch == 0).unwrap();
+        assert_eq!(len, unsafe { libc::strlen(buf.as_ptr() as *const _) });
+        if let Some(n) = n {
+            assert_eq!(n, len);
+        }
+        &buf[..len]
+    }
+
     #[test]
     fn test_get_procfs_reexec() {
         if let Ok(path) = get_procfs_reexec() {
@@ -319,21 +328,19 @@ mod tests {
 
     #[test]
     fn test_get_procfs_readlink() {
-        let mut buf = [0; libc::PATH_MAX as usize];
-
-        if let Ok(n) = get_procfs_readlink(&mut buf) {
-            check_path_bytes(&buf[..n]);
+        for buf in [[0; libc::PATH_MAX as usize], [255; libc::PATH_MAX as usize]].iter_mut() {
+            if let Ok(n) = get_procfs_readlink(buf) {
+                check_path_bytes(check_buflen(buf, Some(n)));
+            }
         }
     }
 
     #[test]
     fn test_get_procinfo() {
-        let mut buf = [0; libc::PATH_MAX as usize];
-
-        if let Ok(n) = get_procinfo(&mut buf) {
-            check_path_bytes(
-                &buf[..n.unwrap_or_else(|| unsafe { libc::strlen(buf.as_ptr() as *const _) })],
-            );
+        for buf in [[0; libc::PATH_MAX as usize], [255; libc::PATH_MAX as usize]].iter_mut() {
+            if let Ok(n) = get_procinfo(buf) {
+                check_path_bytes(check_buflen(buf, n));
+            }
         }
     }
 
@@ -348,22 +355,20 @@ mod tests {
 
     #[test]
     fn test_get_initial_buffered() {
-        let mut buf = [0; libc::PATH_MAX as usize];
-
-        if let Ok(n) = get_initial_buffered(&mut buf) {
-            check_path_bytes(
-                &buf[..n.unwrap_or_else(|| unsafe { libc::strlen(buf.as_ptr() as *const _) })],
-            );
+        for buf in [[0; libc::PATH_MAX as usize], [255; libc::PATH_MAX as usize]].iter_mut() {
+            if let Ok(n) = get_initial_buffered(buf) {
+                check_path_bytes(check_buflen(buf, n));
+            }
         }
     }
 
     #[cfg(target_os = "openbsd")]
     #[test]
     fn test_get_openbsd() {
-        let mut buf = [0; libc::PATH_MAX as usize];
-
-        if let Ok((n, _, _)) = get_openbsd(&mut buf) {
-            check_path_bytes(&buf[..n]);
+        for buf in [[0; libc::PATH_MAX as usize], [255; libc::PATH_MAX as usize]].iter_mut() {
+            if let Ok((n, _, _)) = get_openbsd(buf) {
+                check_path_bytes(check_buflen(buf, Some(n)));
+            }
         }
     }
 }
