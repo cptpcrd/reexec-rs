@@ -50,6 +50,9 @@ pub fn get_procfs_readlink(buf: &mut [u8]) -> Result<usize, ()> {
             // Some OSes may add a trailing NUL byte
             if buf[n - 1] == 0 {
                 n -= 1;
+            } else {
+                // If they didn't, we need to add one
+                buf[n] = 0;
             }
             return Ok(n);
         }
@@ -142,6 +145,7 @@ pub fn get_procinfo(buf: &mut [u8]) -> Result<Option<usize>, ()> {
             // Only return the path if it isn't empty (i.e. not present) and it isn't full (i.e.
             // too long)
             if (1..buf.len() - 1).contains(&n) {
+                buf[n] = 0;
                 return Ok(Some(n as usize));
             }
         }
