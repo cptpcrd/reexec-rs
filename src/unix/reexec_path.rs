@@ -234,7 +234,7 @@ pub fn get_openbsd(buf: &mut [u8]) -> Result<(usize, libc::dev_t, libc::ino_t), 
         arg0 = &arg0[PTR_SIZE..];
     }
     arg0 = &arg0[PTR_SIZE..];
-    arg0 = &arg0[..arg0.iter().position(|&ch| ch == 0)?];
+    arg0 = &arg0[..arg0.iter().position(|&ch| ch == 0).ok_or(())?];
 
     // Now try to get a kinfo_file for the executable
     // This is the first filled-in item, so we only need a 1-element buffer
