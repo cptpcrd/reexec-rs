@@ -26,6 +26,8 @@ pub fn get_procfs_readlink(buf: &mut [u8]) -> Result<usize, ()> {
         Some(b"/proc/self/path/a.out\0")
     } else if cfg!(target_os = "netbsd") {
         Some(b"/proc/curproc/exe\0")
+    } else if cfg!(target_os = "dragonfly") {
+        Some(b"/proc/curproc/file\0")
     } else {
         None
     };
@@ -39,7 +41,7 @@ pub fn get_procfs_readlink(buf: &mut [u8]) -> Result<usize, ()> {
             )
         } as usize;
 
-        if (1..buf.len()).contains(&n) {
+        if (1..buf.len()).contains(&n) && buf[0] == b'/' {
             // Some OSes may add a trailing NUL byte
             if buf[n - 1] == 0 {
                 n -= 1;
