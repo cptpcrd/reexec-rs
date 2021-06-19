@@ -6,36 +6,29 @@ use crate::imp::sys;
 /// If possible, return a path under `/proc` that may refer to the current program.
 #[inline]
 pub fn get_procfs_reexec() -> Result<&'static [u8], ()> {
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    return Ok(b"/proc/self/exe\0");
-
-    #[cfg(any(target_os = "solaris", target_os = "illumos"))]
-    return Ok(b"/proc/self/object/a.out\0");
-
-    #[cfg(any(target_os = "netbsd", target_os = "dragonfly"))]
-    return Ok(b"/proc/curproc/file\0");
-
-    Err(())
+    if cfg!(any(target_os = "linux", target_os = "android")) {
+        Ok(b"/proc/self/exe\0")
+    } else if cfg!(any(target_os = "solaris", target_os = "illumos")) {
+        Ok(b"/proc/self/object/a.out\0")
+    } else if cfg!(any(target_os = "netbsd", target_os = "dragonfly")) {
+        Ok(b"/proc/curproc/file\0")
+    } else {
+        Err(())
+    }
 }
 
 /// If possible, `readlink()` a symlink under `/proc` that may refer to the current program.
 #[inline]
 pub fn get_procfs_readlink(buf: &mut [u8]) -> Result<usize, ()> {
-    #[allow(unused_assignments, unused_mut)]
-    let mut path: Option<&[u8]> = None;
-
-    #[cfg(any(target_os = "linux", target_os = "android"))]
-    {
-        path = Some(b"/proc/self/exe\0");
-    }
-    #[cfg(any(target_os = "solaris", target_os = "illumos"))]
-    {
-        path = Some(b"/proc/self/path/a.out\0");
-    }
-    #[cfg(target_os = "netbsd")]
-    {
-        path = Some(b"/proc/curproc/exe\0");
-    }
+    let path: Option<&[u8]> = if cfg!(any(target_os = "linux", target_os = "android")) {
+        Some(b"/proc/self/exe\0")
+    } else if cfg!(any(target_os = "solaris", target_os = "illumos")) {
+        Some(b"/proc/self/path/a.out\0")
+    } else if cfg!(target_os = "netbsd") {
+        Some(b"/proc/curproc/exe\0")
+    } else {
+        None
+    };
 
     if let Some(path) = path {
         let mut n = unsafe {
