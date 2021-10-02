@@ -48,6 +48,10 @@ pub unsafe fn reexecve(argv: *const *const libc::c_char, envp: *const *const lib
 ///
 /// This is a Windows-specific version of [`reexecve()`] that takes `argv` and `envp` as pointers
 /// to arrays of wide strings.
+///
+/// # Safety
+///
+/// See [`reexecve()`].
 #[cfg_attr(docsrs, doc(cfg(windows)))]
 #[cfg(windows)]
 #[inline]
@@ -61,10 +65,11 @@ pub unsafe fn wreexecve(
 /// If possible, get a path that can be used to re-execute this program.
 ///
 /// The returned path should always be absolute. (If this is necessary for security reasons, you
-/// may want to verify this explicitly.)
+/// should verify this explicitly.)
 ///
 /// Note that this may not be the actual path to the executable; e.g. it may be a special path in
-/// `/proc` that points to the executable.
+/// `/proc` that points to the executable. If you need the actual executable path, use
+/// [`get_exe_path()`].
 #[inline]
 pub fn get_reexec_path() -> Result<Cow<'static, Path>, i32> {
     imp::get_reexec_path()
